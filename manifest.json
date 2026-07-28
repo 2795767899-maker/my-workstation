@@ -1,0 +1,33 @@
+{
+  "name": "超级棒的工作台",
+  "short_name": "工作台",
+  "description": "在职考公一站式管理：考公学习、每日复盘、健康记录、记账管理",
+  "start_url": "./在职考公工作台.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFE8F0",
+  "theme_color": "#FF6B9D",
+  "lang": "zh-CN",
+  "categories": ["education", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
