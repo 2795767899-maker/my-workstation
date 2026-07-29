@@ -290,28 +290,40 @@ input::placeholder,textarea::placeholder{color:var(--gray)}
 
 <!-- 常识速记口诀 -->
 <div class="card" id="mnemonic-card">
-  <div class="card-title"><span class="ico">🎵</span>每日推送 · 常识速记口诀 <span style="font-size:11px;color:var(--text2);margin-left:8px" id="mnemonic-date"></span></div>
-  <div id="mnemonic-hot" style="font-size:11px;color:var(--pink);margin-bottom:4px"></div>
-  <div id="mnemonic-content" style="padding:10px 0"></div>
-  <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-    <button class="btn btn-soft btn-sm" onclick="nextMnemonic()">🔄 换一条</button>
-    <button class="btn btn-soft btn-sm" onclick="favMnemonic()" id="mnemonic-fav-btn">⭐ 收藏</button>
-    <span style="font-size:12px;color:var(--text2);margin-left:auto" id="mnemonic-idx"></span>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div class="card-title" style="margin-bottom:0"><span class="ico">🎵</span>常识速记口诀</div>
+    <div style="display:flex;gap:6px">
+      <button id="mnToggleBtn" class="btn btn-soft btn-sm" onclick="toggleMnemonic()">展开</button>
+      <button class="btn btn-soft btn-sm" onclick="exportMnemonic()">📤 导出</button>
+    </div>
   </div>
-  <div id="mnemonic-favs" style="margin-top:12px;border-top:1px dashed var(--pink3);padding-top:10px"></div>
+  <div id="mnemonic-area" style="display:none;margin-top:10px">
+    <div id="mnemonic-list"></div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <input id="mnRhyme" placeholder="口诀（如：宪法根本地位高...）" style="flex:1" onkeydown="if(event.key==='Enter')addMnemonic()">
+      <input id="mnTip" placeholder="知识点解释" style="flex:1.4" onkeydown="if(event.key==='Enter')addMnemonic()">
+      <button class="btn btn-pink btn-sm" onclick="addMnemonic()">+</button>
+    </div>
+  </div>
 </div>
 
-<!-- 当日政治理论知识 -->
+<!-- 政治理论知识 -->
 <div class="card" id="politics-card">
-  <div class="card-title"><span class="ico">🏛️</span>每日推送 · 政治理论知识 <span style="font-size:11px;color:var(--text2);margin-left:8px" id="politics-date"></span></div>
-  <div id="politics-hot" style="font-size:11px;color:var(--red);margin-bottom:4px"></div>
-  <div id="politics-content" style="padding:10px 0"></div>
-  <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-    <button class="btn btn-soft btn-sm" onclick="nextPolitics()">🔄 换一条</button>
-    <button class="btn btn-soft btn-sm" onclick="favPolitics()" id="politics-fav-btn">⭐ 收藏</button>
-    <span style="font-size:12px;color:var(--text2);margin-left:auto" id="politics-idx"></span>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div class="card-title" style="margin-bottom:0"><span class="ico">🏛️</span>政治理论知识</div>
+    <div style="display:flex;gap:6px">
+      <button id="plToggleBtn" class="btn btn-soft btn-sm" onclick="togglePolitics()">展开</button>
+      <button class="btn btn-soft btn-sm" onclick="exportPolitics()">📤 导出</button>
+    </div>
   </div>
-  <div id="politics-favs" style="margin-top:12px;border-top:1px dashed var(--pink3);padding-top:10px"></div>
+  <div id="politics-area" style="display:none;margin-top:10px">
+    <div id="politics-list"></div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <input id="plRhyme" placeholder="口诀（如：两个确立定乾坤...）" style="flex:1" onkeydown="if(event.key==='Enter')addPolitics()">
+      <input id="plTip" placeholder="知识点解释" style="flex:1.4" onkeydown="if(event.key==='Enter')addPolitics()">
+      <button class="btn btn-pink btn-sm" onclick="addPolitics()">+</button>
+    </div>
+  </div>
 </div>
 
 <!-- 申论 -->
@@ -1103,288 +1115,223 @@ function delEx(i){
 }
 
 // ═══════════ 常识速记口诀 ═══════════
-// 🔥 每日热点优先展示（每月更新），预设题库作为备选轮播
-const MN_HOT=[
-  // === 2026年7月最新热点 ===
-  {c:'🔥 7月时政',r:'建党百零五周年，光辉历程谱新篇\n全面建成现代化，民族复兴在眼前',t:'2026年7月1日，庆祝中国共产党成立105周年。习近平：回顾光辉历程，展望光明前景，动员全党全国人民朝着全面建成社会主义现代化强国目标迈进。'},
-  {c:'🔥 7月时政',r:'人工智能大治理，公正合理全球建\n智能向善人为本，共享红利不偏废',t:'2026年7月17日，习近平在2026世界人工智能大会开幕式发表主旨讲话：携手构建公正合理的全球人工智能治理体系，坚持智能向善、以人为本。'},
-  {c:'🔥 7月时政',r:'AI治理五原则，发展安全两手抓\n公平普惠共参与，开放包容谋共赢',t:'人工智能全球治理五大原则：发展优先、安全可控、公平普惠、开放包容、共商共建共享。'},
-  {c:'🔥 7月时政',r:'科技奖励大会开，创新驱动强国建\n核心技术要突破，高水平自立自强',t:'2026年7月，国家科学技术奖励大会召开，强调实现高水平科技自立自强，打好关键核心技术攻坚战。'},
-  {c:'🔥 7月时政',r:'安全生产重如山，风险隐患全排查\n抓实抓细防事故，人民生命第一位',t:'2026年7月，习近平强调深入排查整治各类风险隐患，抓实抓细安全生产措施落实，坚决防止重特大事故发生。'},
-];
-const MNEMONICS=[
-  // 🔥 2026年7月最新热点（与 MN_HOT 对应，保证离线时也有）
-  {c:'🔥 7月时政',r:'建党百零五周年，光辉历程谱新篇\n全面建成现代化，民族复兴在眼前',t:'2026年7月1日，庆祝中国共产党成立105周年。习近平：回顾光辉历程，展望光明前景，动员全党全国人民朝着全面建成社会主义现代化强国目标迈进。'},
-  {c:'🔥 7月时政',r:'人工智能大治理，公正合理全球建\n智能向善人为本，共享红利不偏废',t:'2026年7月17日，习近平在2026世界人工智能大会开幕式发表主旨讲话：携手构建公正合理的全球人工智能治理体系，坚持智能向善、以人为本。'},
-  {c:'🔥 7月时政',r:'AI治理五原则，发展安全两手抓\n公平普惠共参与，开放包容谋共赢',t:'人工智能全球治理五大原则：发展优先、安全可控、公平普惠、开放包容、共商共建共享。'},
-  {c:'🔥 7月时政',r:'科技奖励大会开，创新驱动强国建\n核心技术要突破，高水平自立自强',t:'2026年7月，国家科学技术奖励大会召开，强调实现高水平科技自立自强，打好关键核心技术攻坚战。'},
-  {c:'🔥 7月时政',r:'安全生产重如山，风险隐患全排查\n抓实抓细防事故，人民生命第一位',t:'2026年7月，习近平强调深入排查整治各类风险隐患，抓实抓细安全生产措施落实，坚决防止重特大事故发生。'},
-  // 法律
-  {c:'法律',r:'宪法根本地位高，法律保留不可少\n人大立法行政令，效力层级要记牢',t:'宪法→法律→行政法规→地方性法规→规章，层级逐级降低，上位法优先。'},
-  {c:'法律',r:'行政处罚简易程，五十元下可当场\n公民五十法人千，当场收缴有法章',t:'简易程序：违法事实确凿+法定依据+对公民≤50元/法人≤1000元警告或罚款。'},
-  {c:'法律',r:'正当防卫五条件，不法侵害正进行\n保护合法之权益，制止不法不能过',t:'起因/时间/主观/对象/限度，五要件缺一不可，明显超限度=防卫过当。'},
-  {c:'法律',r:'行政复议六十日，行政诉讼六个月\n复议前置看类型，纳税争议要先行',t:'复议申请期限60日（知悉之日起），行政诉讼6个月，税务类争议须先复议再诉讼。'},
-  // 政治
-  {c:'政治',r:'四项基本原则立，社会主义必由路\n人民民主专政固，党的领导是核心',t:'坚持社会主义道路、人民民主专政、党的领导、马列主义毛泽东思想——四项基本原则。'},
-  {c:'政治',r:'一个中心两基点，经济建设为中心\n改革开放强国路，四项原则立国本',t:'党在社会主义初级阶段的基本路线：以经济建设为中心，坚持四项基本原则，坚持改革开放。'},
-  {c:'政治',r:'两个确立定乾坤，两个维护守初心\n核心地位要拥护，思想指导须遵循',t:'两个确立：确立习近平同志党中央/全党核心地位、确立习近平新时代中国特色社会主义思想指导地位。两个维护：维护总书记核心地位、维护党中央权威。'},
-  {c:'政治',r:'四个意识记心间，政治大局和核心\n看齐意识不可缺，自觉对标党中央',t:'政治意识、大局意识、核心意识、看齐意识，自觉在思想上政治上行动上同党中央保持高度一致。'},
-  // 历史
-  {c:'历史',r:'南昌起义第一枪，秋收起义上井冈\n长征两万五千里，遵义会议转折点',t:'1927南昌→秋收→1928井冈山会师→1934-1936长征→1935遵义会议（生死攸关转折）。'},
-  {c:'历史',r:'鸦片战争签南京，半殖民地从此始\n马关条约割台湾，辛丑赔款四亿五',t:'1842南京条约→1895马关条约（割台澎）→1901辛丑条约（赔4.5亿两）→中国完全沦为半殖民地。'},
-  {c:'历史',r:'五四运动开新篇，新民主主义起点\n中共一大定乾坤，开天辟地大事变',t:'1919五四运动→新民主主义革命开端；1921中共一大→中国革命面貌焕然一新。'},
-  {c:'历史',r:'抗日民族统一线，七七事变全面战\n平型关捷振人心，百团大战破囚笼',t:'1937七七事变→全面抗战；1937平型关大捷（首次大胜）→1940百团大战。'},
-  // 科技
-  {c:'科技',r:'蛟龙下海七千米，天眼探空望苍穹\n北斗组网覆全球，嫦娥揽月采壤归',t:'蛟龙号载人潜水器（7062米）→天眼FAST→北斗导航系统→嫦娥五号月球采样。'},
-  {c:'科技',r:'量子计算九章出，光量子算超经典\n人造太阳EAST，一亿度下百秒燃',t:'九章量子计算机（光量子霸权）→EAST全超导托卡马克（1.2亿℃维持101秒）。'},
-  {c:'科技',r:'两弹一星邓稼先，杂交水稻袁隆平\n青蒿素出屠呦呦，诺奖零的突破',t:'两弹一星元勋→袁隆平杂交水稻→屠呦呦青蒿素（2015诺贝尔生理学/医学奖）。'},
-  // 地理
-  {c:'地理',r:'中国地势西高东，三级阶梯层层降\n青藏高原第一阶，华北平原第三阶',t:'第一阶梯：青藏高原（>4000m）→第二阶梯：内蒙古/黄土/云贵→第三阶梯：东北/华北/长江中下游平原。'},
-  {c:'地理',r:'秦岭淮河分南北，一月零度等温线\n八百毫米等降水，亚热暖温分界线',t:'秦岭-淮河：1月0℃等温线/800mm等降水量线/亚热带与暖温带分界线/南北方分界线。'},
-  {c:'地理',r:'长江黄河两大河，三峡葛洲筑大坝\n南水北调三线路，东中西线调水忙',t:'长江三峡/葛洲坝→南水北调东（京杭运河）、中（丹江口水库）、西线工程。'},
-  // 经济
-  {c:'经济',r:'GDP核算三方法，生产收入支出法\nCPI衡量物价变，一篮子商品定权重',t:'GDP=消费+投资+政府购买+净出口；CPI反映居民消费价格变动，是通胀核心指标。'},
-  {c:'经济',r:'市场经济三机制，价格供求竞争性\n看不见手亚当斯，宏观调控政府为',t:'市场机制：价格/供求/竞争；亚当·斯密"看不见的手"；宏观调控弥补市场失灵。'},
-];
 const MNK='gk_mnemonic';
-function loadMnemonic(){try{let r=localStorage.getItem(MNK);return r?JSON.parse(r):{seen:[],favs:[],lastDate:''}}catch(e){return{seen:[],favs:[],lastDate:''}}}
+function loadMnemonic(){try{let r=localStorage.getItem(MNK);return r?JSON.parse(r):[]}catch(e){return[]}}
 function saveMnemonic(s){localStorage.setItem(MNK,JSON.stringify(s))}
-function initMnemonic(){
-  let s=loadMnemonic();
-  let today=new Date().toISOString().slice(0,10);
-  document.getElementById('mnemonic-date').textContent=today;
-  if(s.lastDate!==today){s.seen=[];s.lastDate=today;saveMnemonic(s)}
-  // 🔥 优先展示每日热点（今日日期对应的热点）
-  let hotIdx=today.split('-').reduce((a,b)=>a+parseInt(b),0)%MN_HOT.length;
-  let hot=MN_HOT[hotIdx];
-  document.getElementById('mnemonic-hot').innerHTML='🔥 <b>今日推荐：</b>'+hot.c+' · '+hot.r.replace(/\n/g,' · ').slice(0,30)+'…';
-  // 第一条展示热点
-  renderMnemonic(hotIdx,true);
-  renderMnemonicFavs();
-}
-function renderMnemonic(idx,isHot){
-  let s=loadMnemonic();
-  let m=isHot?MN_HOT[idx]:MNEMONICS[idx];
-  let h=`<div class="mnemonic-box">
-    <div class="mnemonic-tag">${m.c}</div>
-    <div class="mnemonic-rhyme">${m.r.replace(/\n/g,'<br>')}</div>
-    <div class="mnemonic-tip">💡 ${m.t}</div>
-  </div>`;
-  document.getElementById('mnemonic-content').innerHTML=h;
-  document.getElementById('mnemonic-idx').textContent=`热点 ${MN_HOT.length}条 + 题库 ${MNEMONICS.length}条`;
-  let favd=s.favs.some(f=>f.r===m.r);
-  document.getElementById('mnemonic-fav-btn').innerHTML=favd?'⭐ 已收藏':'☆ 收藏';
-  if(!s.seen.includes(idx)){s.seen.push(idx);saveMnemonic(s)}
-  window._mnemonicIdx=idx;window._mnemonicIsHot=isHot;
-}
-function nextMnemonic(){
-  let s=loadMnemonic();
-  let isHot=window._mnemonicIsHot;
-  let pool=isHot?MN_HOT:MNEMONICS;
-  let idx=(window._mnemonicIdx??0)+1;
-  if(idx>=pool.length){
-    // 热点看完切到题库
-    if(isHot){idx=0;isHot=false;pool=MNEMONICS}
-    else{toast('今天的口诀都看完了 🎉');return}
+function initMnemonic(){renderMnemonic();}
+function renderMnemonic(){
+  let list=loadMnemonic();
+  if(list.length===0){
+    document.getElementById('mnemonic-list').innerHTML='<div style="color:var(--text2);text-align:center;padding:12px;font-size:13px">还没有口诀，添加一条吧 🎵</div>';
+    return;
   }
-  let tries=0;
-  while(s.seen.includes(idx)&&tries<pool.length){idx=(idx+1)%pool.length;tries++}
-  if(tries>=pool.length){toast('今天的口诀都看完了 🎉');return}
-  renderMnemonic(idx,isHot);
-}
-function favMnemonic(){
-  let s=loadMnemonic();
-  let isHot=window._mnemonicIsHot;
-  let pool=isHot?MN_HOT:MNEMONICS;
-  let m=pool[window._mnemonicIdx??0];
-  if(!m){toast('出错了，刷新试试');return}
-  let fi=s.favs.findIndex(f=>f.r===m.r);
-  if(fi>=0){s.favs.splice(fi,1);toast('已取消收藏')}
-  else{s.favs.unshift({r:m.r,t:m.t,c:m.c});toast('⭐ 已收藏')}
-  saveMnemonic(s);
-  let favd=s.favs.some(f=>f.r===m.r);
-  document.getElementById('mnemonic-fav-btn').innerHTML=favd?'⭐ 已收藏':'☆ 收藏';
-  renderMnemonicFavs();
-}
-function renderMnemonicFavs(){
-  let s=loadMnemonic();
-  let el=document.getElementById('mnemonic-favs');
-  if(s.favs.length===0){el.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:6px">暂无收藏口诀</div>';return}
-  let h='<div style="font-size:13px;font-weight:600;color:var(--pink);margin-bottom:6px">📌 我的收藏</div>';
-  s.favs.forEach((f,i)=>{
-    h+=`<div class="mnemonic-fav-item">
-      <div><span class="rhyme">${f.r.replace(/\n/g,' · ')}</span><span style="font-size:11px;color:var(--text2);margin-left:6px">[${f.c}]</span></div>
-      <span class="del" onclick="delMnemonicFav(${i})">×</span>
+  let h='';
+  list.forEach((m,i)=>{
+    h+=`<div class="word-row" style="display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid var(--pink4)">
+      <div style="flex:1;min-width:0">
+        <div class="wb-word" id="mnWord_${i}" ondblclick="editMnemonic(${i})" oncontextmenu="event.preventDefault();startMnSwap(${i})" ontouchstart="mnTouchStart(${i},event)" ontouchend="mnTouchEnd()" style="font-weight:700;color:var(--pink);font-size:14px;line-height:1.8;white-space:pre-wrap;cursor:pointer" title="双击修改 | 长按换序">${m.r.replace(/\n/g,'<br>')}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;line-height:1.5">💡 ${m.t}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <span onclick="editMnemonic(${i})" style="cursor:pointer;font-size:14px;padding:2px 6px;color:var(--pink)" title="修改">✎</span>
+        <span onclick="delMnemonic(${i})" style="cursor:pointer;font-size:16px;padding:2px 6px;color:var(--gray)" title="删除">×</span>
+      </div>
     </div>`;
   });
-  el.innerHTML=h;
+  document.getElementById('mnemonic-list').innerHTML=h;
 }
-function delMnemonicFav(i){
-  let s=loadMnemonic();
-  s.favs.splice(i,1);
-  saveMnemonic(s);
-  let m=MNEMONICS[window._mnemonicIdx??0];
-  let favd=s.favs.some(f=>f.r===m.r);
-  document.getElementById('mnemonic-fav-btn').innerHTML=favd?'⭐ 已收藏':'☆ 收藏';
-  renderMnemonicFavs();
+function addMnemonic(){
+  let r=document.getElementById('mnRhyme')?.value?.trim();
+  let t=document.getElementById('mnTip')?.value?.trim();
+  if(!r)return;
+  let list=loadMnemonic();
+  list.unshift({r,t});
+  saveMnemonic(list);
+  document.getElementById('mnRhyme').value='';
+  document.getElementById('mnTip').value='';
+  renderMnemonic();
+  toast('✅ 已添加');
+}
+function editMnemonic(i){
+  let list=loadMnemonic();
+  let m=list[i];
+  let wEl=document.getElementById('mnWord_'+i);
+  if(!wEl)return;
+  wEl.innerHTML=`<textarea id="mnEditR_${i}" style="width:100%;min-height:60px;font-size:14px;font-family:inherit;border:2px solid var(--pink);border-radius:6px;padding:6px;resize:vertical">${m.r}</textarea>
+    <input id="mnEditT_${i}" value="${m.t.replace(/"/g,'&quot;')}" style="width:100%;margin-top:4px;font-size:12px;border:1px solid var(--pink3);border-radius:4px;padding:4px">
+    <button onclick="commitMnemonic(${i})" style="margin-top:4px;font-size:12px;background:var(--pink);color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer">保存</button>`;
+}
+function commitMnemonic(i){
+  let list=loadMnemonic();
+  let newR=document.getElementById('mnEditR_'+i)?.value?.trim();
+  let newT=document.getElementById('mnEditT_'+i)?.value?.trim();
+  if(!newR)return;
+  list[i].r=newR;
+  list[i].t=newT||'';
+  saveMnemonic(list);
+  renderMnemonic();
+}
+function delMnemonic(i){
+  let list=loadMnemonic();
+  list.splice(i,1);
+  saveMnemonic(list);
+  renderMnemonic();
+  toast('🗑️ 已删除');
+}
+let _mnSwapIdx=-1,_mnTimer=null;
+function mnTouchStart(i,e){_mnTimer=setTimeout(()=>{startMnSwap(i)},500)}
+function mnTouchEnd(){clearTimeout(_mnTimer)}
+function startMnSwap(i){
+  _mnSwapIdx=i;
+  let rows=document.querySelectorAll('#mnemonic-list .word-row');
+  rows.forEach((r,j)=>{r.style.background=j===i?'var(--pink4)':'';r.onclick=()=>swapMnemonic(i,j)});
+  toast('点击要交换的目标行');
+}
+function swapMnemonic(a,b){
+  if(a===b){_mnSwapIdx=-1;renderMnemonic();return}
+  let list=loadMnemonic();
+  let tmp=list[a];list[a]=list[b];list[b]=tmp;
+  saveMnemonic(list);
+  _mnSwapIdx=-1;
+  renderMnemonic();
+  toast('✅ 已交换');
+}
+function toggleMnemonic(){
+  let area=document.getElementById('mnemonic-area');
+  let btn=document.getElementById('mnToggleBtn');
+  if(area.style.display==='none'){
+    area.style.display='block';
+    btn.textContent='收起';
+    renderMnemonic();
+  }else{
+    area.style.display='none';
+    btn.textContent='展开';
+  }
+}
+function exportMnemonic(){
+  let list=loadMnemonic();
+  if(list.length===0){toast('还没有口诀');return}
+  let d=new Date().toISOString().slice(0,10);
+  let text='常识速记口诀\n导出日期：'+d+'\n'+'─'.repeat(24)+'\n';
+  list.forEach((m,i)=>{text+=(i+1)+'. '+m.r+'\n   💡 '+m.t+'\n\n'});
+  text+='（共 '+list.length+' 条）';
+  let blob=new Blob(['﻿'+text],{type:'text/plain;charset=utf-8'});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement('a');
+  a.href=url;a.download='常识速记口诀_'+d+'.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('✅ 已导出 '+list.length+' 条 (TXT)');
 }
 
-// ═══════════ 每日政治理论知识 ═══════════
-// 🔥 每日热点优先展示（每月更新），预设题库作为备选轮播
-const PL_HOT=[
-  {c:'🔥 7月时政',r:'建党百零五周年，总书记讲话明方向\n光辉历程回顾过，光明前景展望远\n全面建成现代化，民族复兴不可挡',
-   t:'2026年7月1日，习近平在庆祝建党105周年大会上发表重要讲话：回顾党走过的光辉历程，展望党和人民事业发展的光明前景，动员全党全国人民满怀信心朝着全面建成社会主义现代化强国目标迈进。'},
-  {c:'🔥 7月时政',r:'AI治理全球建，公正合理是关键\n智能向善人为本，发展安全两手牵\n开放包容共参与，共享红利不落单',
-   t:'2026年7月17日，习近平在2026世界人工智能大会发表主旨讲话《携手构建公正合理的全球人工智能治理体系》：坚持智能向善、以人为本、发展优先、安全可控、公平普惠、开放包容、共商共建共享。'},
-  {c:'🔥 7月时政',r:'科技自强高水平，核心技术要突破\n国家科技奖大会，创新驱动强国路\n基础研究深扎根，人才辈出成果硕',
-   t:'2026年7月，国家科学技术奖励大会隆重召开。习近平强调实现高水平科技自立自强，打好关键核心技术攻坚战，加强基础研究，培养高水平科技人才。'},
-  {c:'🔥 7月时政',r:'安全生产大于天，风险排查不松懈\n人民生命第一位，措施落实要抓细\n重特大事故坚决防，底线思维不可弃',
-   t:'2026年7月，习近平对安全生产工作作出重要指示：深入排查整治各类风险隐患，抓实抓细安全生产措施落实，坚决防止重特大事故发生。'},
-  {c:'🔥 7月时政',r:'求是杂志发文章，建党讲话再学习\n初心使命永不忘，第二个百年目标进\n党的领导是核心，中国特色是根基',
-   t:'2026年7月16日《求是》杂志第14期发表习近平重要文章《在庆祝中国共产党成立105周年大会上的讲话》。'},
-];
-const POLITICS=[
-  // 🔥 2026年7月最新热点
-  {c:'🔥 7月时政',r:'建党百零五周年，总书记讲话明方向\n光辉历程回顾过，光明前景展望远\n全面建成现代化，民族复兴不可挡',
-   t:'2026年7月1日，习近平在庆祝建党105周年大会上发表重要讲话：回顾党走过的光辉历程，展望党和人民事业发展的光明前景，动员全党全国人民朝着全面建成社会主义现代化强国目标迈进。'},
-  {c:'🔥 7月时政',r:'AI治理全球建，公正合理是关键\n智能向善人为本，发展安全两手牵\n开放包容共参与，共享红利不落单',
-   t:'2026年7月17日，习近平在2026世界人工智能大会发表主旨讲话：携手构建公正合理的全球人工智能治理体系，坚持智能向善、以人为本。'},
-  {c:'🔥 7月时政',r:'科技自强高水平，核心技术要突破\n国家科技奖大会，创新驱动强国路\n基础研究深扎根，人才辈出成果硕',
-   t:'2026年7月，国家科学技术奖励大会隆重召开，强调实现高水平科技自立自强。'},
-  {c:'🔥 7月时政',r:'安全生产大于天，风险排查不松懈\n人民生命第一位，措施落实要抓细\n重特大事故坚决防，底线思维不可弃',
-   t:'2026年7月，习近平对安全生产作出重要指示：排查整治风险隐患，防止重特大事故发生。'},
-  {c:'🔥 7月时政',r:'求是杂志发文章，建党讲话再学习\n初心使命永不忘，第二个百年目标进',
-   t:'2026年7月16日《求是》第14期发表习近平《在庆祝中国共产党成立105周年大会上的讲话》。'},
-  // 习近平新时代中国特色社会主义思想
-  {c:'新思想',r:'两个确立定乾坤，两个维护守初心\n核心地位要拥护，思想指导须遵循',
-   t:'两个确立：确立习近平同志党中央/全党核心地位、确立习近平新时代中国特色社会主义思想指导地位。两个维护：坚决维护总书记核心地位、坚决维护党中央权威和集中统一领导。'},
-  {c:'新思想',r:'四个意识记心间，政治大局和核心\n看齐意识不可缺，自觉对标党中央',
-   t:'四个意识：政治意识、大局意识、核心意识、看齐意识，自觉在思想上政治上行动上同党中央保持高度一致。'},
-  {c:'新思想',r:'四个自信根基牢，道路理论制度好\n文化自信是底蕴，中华文明五千年',
-   t:'四个自信：道路自信、理论自信、制度自信、文化自信。文化自信是更基础、更广泛、更深厚的自信。'},
-  {c:'新思想',r:'五位一体总布局，经济政治文化齐\n社会生态文明建，全面发展不偏废',
-   t:'五位一���总体布局：经济建设、政治建设、文化建设、社会建设、生态文明建设，全面推进。'},
-  {c:'新思想',r:'四个全面战略局，现代化建是目标\n深化改革强动力，依法治国是保障\n从严治党是根本，协调推进不放松',
-   t:'四个全面：全面建设社会主义现代化国家、全面深化改革、全面依法治国、全面从严治党。'},
-  // 中国式现代化
-  {c:'中国式现代化',r:'中国式现代化五特征，人口规模最巨大\n共同富裕是本质，物质精神双文明\n人与自然和谐处，和平发展是道路',
-   t:'五大特征：人口规模巨大、全体人民共同富裕、物质文明和精神文明相协调、人与自然和谐共生、走和平发展道路。'},
-  {c:'中国式现代化',r:'本质要求有九条，党的领导是首要\n中国特色要坚持，高质量发展为主线\n全过程人民民主，丰富人民精神界\n共同富裕扎实推进，人与自然和谐生\n人类命运共同体，文明新形态创',
-   t:'九条本质要求：坚持党的领导、坚持中国特色社会主义、实现高质量发展、发展全过程人民民主、丰富人民精神世界、实现全体人民共同富裕、促进人与自然和谐共生、推动构建人类命运共同体、创造人类文明新形态。'},
-  // 二十大报告要点
-  {c:'二十大',r:'中心任务要记清，团结带领全国民\n全面建成现代化，第二个百年目标行\n中国式现代化推进，中华民族伟大复兴',
-   t:'二十大报告：从现在起，党的中心任务是团结带领全国各族人民全面建成社会主义现代化强国、实现第二个百年奋斗目标，以中国式现代化全面推进中华民族伟大复兴。'},
-  {c:'二十大',r:'两步走战略安排，二〇三五基本成\n本世纪中叶富强，全面建成现代化',
-   t:'2035年基本实现社会主义现代化→本世纪中叶把我国建成富强民主文明和谐美丽的社会主义现代化强国。'},
-  {c:'二十大',r:'第一要务是发展，高质量发展主题\n科技是第一生产力，人才是第一资源\n创新是第一动力，三第一要牢记',
-   t:'发展是党执政兴国的第一要务。科技是第一生产力、人才是第一资源、创新是第一动力。'},
-  // 两会/最新时政
-  {c:'时政热点',r:'新质生产力要懂，创新起主导作用\n高科技高效能高质量，符合新发展理念\n技术革命性突破，要素创新性配置\n产业深度转型升级，全要素生产率提升',
-   t:'新质生产力：创新起主导作用，摆脱传统经济增长方式，具有高科技、高效能、高质量特征，符合新发展理念的先进生产力质态。'},
-  {c:'时政热点',r:'高质量发展是硬道理，新时代的硬道理\n供给侧结构改革深，扩大内需战略基\n统筹发展和安全，新发展格局加快建',
-   t:'2024中央经济工作会议：高质量发展是新时代的硬道理。深化供给侧结构性改革，着力扩大内需，加快构建新发展格局。'},
-  {c:'时政热点',r:'乡村振兴二十字，产业兴旺是重点\n生态宜居是关键，乡风文明是保障\n治理有效是基础，生活富裕是根本',
-   t:'乡村振兴战略总要求：产业兴旺、生态宜居、乡风文明、治理有效、生活富裕。'},
-  // 新发展理念
-  {c:'发展理念',r:'新发展理念五个词，创新协调绿色好\n开放共享不能少，引领发展新阶段',
-   t:'创新是引领发展的第一动力、协调是持续健康发展的内在要求、绿色是永续发展的必要条件、开放是国家繁荣发展的必由之路、共享是中国特色社会主义的本质要求。'},
-  {c:'发展理念',r:'新发展格局双循环，国内大循环主体\n国内国际相互促，内需为战略基点',
-   t:'加快构建以国内大循环为主体、国内国际双循环相互促进的新发展格局。'},
-  // 全过程人民民主
-  {c:'民主法治',r:'全过程人民民主好，全链条全方位覆盖\n民主选举协商决策，管理监督全环节\n最广泛最真实管用，社会主义民主优',
-   t:'全过程人民民主：全链条、全方位、全覆盖的民主，涵盖民主选举、协商、决策、管理、监督各环节，是最广泛最真实最管用的社会主义民主。'},
-  {c:'民主法治',r:'全面依法治国要，科学立法是前提\n严格执法是关键，公正司法是防线\n全民守法是基础，法治国家社会政府一体建',
-   t:'依法治国十六字方针：科学立法、严格执法、公正司法、全民守法。坚持法治国家、法治政府、法治社会一体建设。'},
-  // 文化自信
-  {c:'文化思想',r:'第二个结合是创新，马克思主义与中华\n优秀传统文化结合，彼此契合互相成就\n筑牢道路根基，打开创新空间',
-   t:'"第二个结合"：把马克思主义基本原理同中华优秀传统文化相结合，是又一次思想解放。'},
-  {c:'文化思想',r:'文化使命新时代，举旗帜聚民心重\n育新人兴文化展形象，建设文化强国',
-   t:'新时代文化使命：举旗帜、聚民心、育新人、兴文化、展形象。'},
-  // 生态文明
-  {c:'生态文明',r:'绿水青山就是金山银山，生态文明思想\n山水林田湖草沙，一体化保护系统治\n双碳目标要牢记，碳达峰和碳中和',
-   t:'习近平生态文明思想：绿水青山就是金山银山。2030年前碳达峰、2060年前碳中和。山水林田湖草沙一体化保护和系统治理。'},
-  {c:'生态文明',r:'美丽中国建设目标，天蓝地绿水清\n人与自然和谐生，绿色低碳发展路',
-   t:'建设人与自然和谐共生的美丽中国，推动绿色低碳发展。'},
-];
-const PK='gk_politics';
-function loadPolitics(){try{let r=localStorage.getItem(PK);return r?JSON.parse(r):{seen:[],favs:[],lastDate:''}}catch(e){return{seen:[],favs:[],lastDate:''}}}
-function savePolitics(s){localStorage.setItem(PK,JSON.stringify(s))}
-function initPolitics(){
-  let s=loadPolitics();
-  let today=new Date().toISOString().slice(0,10);
-  document.getElementById('politics-date').textContent=today;
-  if(s.lastDate!==today){s.seen=[];s.lastDate=today;savePolitics(s)}
-  // 🔥 优先展示每日热点
-  let hotIdx=today.split('-').reduce((a,b)=>a+parseInt(b),0)%PL_HOT.length;
-  let hot=PL_HOT[hotIdx];
-  document.getElementById('politics-hot').innerHTML='🔥 <b>今日推荐：</b>'+hot.c+' · '+hot.r.replace(/\n/g,' · ').slice(0,30)+'…';
-  renderPolitics(hotIdx,true);
-  renderPoliticsFavs();
-}
-function renderPolitics(idx,isHot){
-  let s=loadPolitics();
-  let m=isHot?PL_HOT[idx]:POLITICS[idx];
-  let h=`<div class="mnemonic-box">
-    <div class="mnemonic-tag">${m.c}</div>
-    <div class="mnemonic-rhyme">${m.r.replace(/\n/g,'<br>')}</div>
-    <div class="mnemonic-tip">💡 ${m.t}</div>
-  </div>`;
-  document.getElementById('politics-content').innerHTML=h;
-  document.getElementById('politics-idx').textContent=`热点 ${PL_HOT.length}条 + 题库 ${POLITICS.length}条`;
-  let favd=s.favs.some(f=>f.r===m.r);
-  document.getElementById('politics-fav-btn').innerHTML=favd?'⭐ 已收藏':'☆ 收藏';
-  if(!s.seen.includes(idx)){s.seen.push(idx);savePolitics(s)}
-  window._politicsIdx=idx;window._politicsIsHot=isHot;
-}
-function nextPolitics(){
-  let s=loadPolitics();
-  let isHot=window._politicsIsHot;
-  let pool=isHot?PL_HOT:POLITICS;
-  let idx=(window._politicsIdx??0)+1;
-  if(idx>=pool.length){
-    if(isHot){idx=0;isHot=false;pool=POLITICS}
-    else{toast('今天的政治理论都看完了 🎉');return}
+// ═══════════ 政治理论知识 ═══════════
+const PLK='gk_politics';
+function loadPolitics(){try{let r=localStorage.getItem(PLK);return r?JSON.parse(r):[]}catch(e){return[]}}
+function savePolitics(s){localStorage.setItem(PLK,JSON.stringify(s))}
+function initPolitics(){renderPolitics();}
+function renderPolitics(){
+  let list=loadPolitics();
+  if(list.length===0){
+    document.getElementById('politics-list').innerHTML='<div style="color:var(--text2);text-align:center;padding:12px;font-size:13px">还没有理论，添加一条吧 🏛️</div>';
+    return;
   }
-  let tries=0;
-  while(s.seen.includes(idx)&&tries<pool.length){idx=(idx+1)%pool.length;tries++}
-  if(tries>=pool.length){toast('今天的政治理论都看完了 🎉');return}
-  renderPolitics(idx,isHot);
-}
-function favPolitics(){
-  let s=loadPolitics();
-  let isHot=window._politicsIsHot;
-  let pool=isHot?PL_HOT:POLITICS;
-  let m=pool[window._politicsIdx??0];
-  if(!m){toast('出错了，刷新试试');return}
-  let fi=s.favs.findIndex(f=>f.r===m.r);
-  if(fi>=0){s.favs.splice(fi,1);toast('已取消收藏')}
-  else{s.favs.unshift({r:m.r,t:m.t,c:m.c});toast('⭐ 已收藏')}
-  savePolitics(s);
-  let favd=s.favs.some(f=>f.r===m.r);
-  document.getElementById('politics-fav-btn').innerHTML=favd?'⭐ 已收藏':'☆ 收藏';
-  renderPoliticsFavs();
-}
-function renderPoliticsFavs(){
-  let s=loadPolitics();
-  let el=document.getElementById('politics-favs');
-  if(s.favs.length===0){el.innerHTML='<div style="font-size:12px;color:var(--text2);text-align:center;padding:6px">暂无收藏理论</div>';return}
-  let h='<div style="font-size:13px;font-weight:600;color:var(--pink);margin-bottom:6px">📌 我的收藏</div>';
-  s.favs.forEach((f,i)=>{
-    h+=`<div class="mnemonic-fav-item">
-      <div><span class="rhyme">${f.r.replace(/\n/g,' · ')}</span><span style="font-size:11px;color:var(--text2);margin-left:6px">[${f.c}]</span></div>
-      <span class="del" onclick="delPoliticsFav(${i})">×</span>
+  let h='';
+  list.forEach((m,i)=>{
+    h+=`<div class="word-row" style="display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid var(--pink4)">
+      <div style="flex:1;min-width:0">
+        <div class="wb-word" id="plWord_${i}" ondblclick="editPolitics(${i})" oncontextmenu="event.preventDefault();startPlSwap(${i})" ontouchstart="plTouchStart(${i},event)" ontouchend="plTouchEnd()" style="font-weight:700;color:var(--pink);font-size:14px;line-height:1.8;white-space:pre-wrap;cursor:pointer" title="双击修改 | 长按换序">${m.r.replace(/\n/g,'<br>')}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;line-height:1.5">💡 ${m.t}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <span onclick="editPolitics(${i})" style="cursor:pointer;font-size:14px;padding:2px 6px;color:var(--pink)" title="修改">✎</span>
+        <span onclick="delPolitics(${i})" style="cursor:pointer;font-size:16px;padding:2px 6px;color:var(--gray)" title="删除">×</span>
+      </div>
     </div>`;
   });
-  el.innerHTML=h;
+  document.getElementById('politics-list').innerHTML=h;
 }
-function delPoliticsFav(i){
-  let s=loadPolitics();
-  s.favs.splice(i,1);
-  savePolitics(s);
-  let m=POLITICS[window._politicsIdx??0];
-  let favd=s.favs.some(f=>f.r===m.r);
-  document.getElementById('politics-fav-btn').innerHTML=favd?'⭐ 已收藏':'☆ 收藏';
-  renderPoliticsFavs();
+function addPolitics(){
+  let r=document.getElementById('plRhyme')?.value?.trim();
+  let t=document.getElementById('plTip')?.value?.trim();
+  if(!r)return;
+  let list=loadPolitics();
+  list.unshift({r,t});
+  savePolitics(list);
+  document.getElementById('plRhyme').value='';
+  document.getElementById('plTip').value='';
+  renderPolitics();
+  toast('✅ 已添加');
+}
+function editPolitics(i){
+  let list=loadPolitics();
+  let m=list[i];
+  let wEl=document.getElementById('plWord_'+i);
+  if(!wEl)return;
+  wEl.innerHTML=`<textarea id="plEditR_${i}" style="width:100%;min-height:60px;font-size:14px;font-family:inherit;border:2px solid var(--pink);border-radius:6px;padding:6px;resize:vertical">${m.r}</textarea>
+    <input id="plEditT_${i}" value="${m.t.replace(/"/g,'&quot;')}" style="width:100%;margin-top:4px;font-size:12px;border:1px solid var(--pink3);border-radius:4px;padding:4px">
+    <button onclick="commitPolitics(${i})" style="margin-top:4px;font-size:12px;background:var(--pink);color:#fff;border:none;border-radius:4px;padding:4px 12px;cursor:pointer">保存</button>`;
+}
+function commitPolitics(i){
+  let list=loadPolitics();
+  let newR=document.getElementById('plEditR_'+i)?.value?.trim();
+  let newT=document.getElementById('plEditT_'+i)?.value?.trim();
+  if(!newR)return;
+  list[i].r=newR;
+  list[i].t=newT||'';
+  savePolitics(list);
+  renderPolitics();
+}
+function delPolitics(i){
+  let list=loadPolitics();
+  list.splice(i,1);
+  savePolitics(list);
+  renderPolitics();
+  toast('🗑️ 已删除');
+}
+let _plSwapIdx=-1,_plTimer=null;
+function plTouchStart(i,e){_plTimer=setTimeout(()=>{startPlSwap(i)},500)}
+function plTouchEnd(){clearTimeout(_plTimer)}
+function startPlSwap(i){
+  _plSwapIdx=i;
+  let rows=document.querySelectorAll('#politics-list .word-row');
+  rows.forEach((r,j)=>{r.style.background=j===i?'var(--pink4)':'';r.onclick=()=>swapPolitics(i,j)});
+  toast('点击要交换的目标行');
+}
+function swapPolitics(a,b){
+  if(a===b){_plSwapIdx=-1;renderPolitics();return}
+  let list=loadPolitics();
+  let tmp=list[a];list[a]=list[b];list[b]=tmp;
+  savePolitics(list);
+  _plSwapIdx=-1;
+  renderPolitics();
+  toast('✅ 已交换');
+}
+function togglePolitics(){
+  let area=document.getElementById('politics-area');
+  let btn=document.getElementById('plToggleBtn');
+  if(area.style.display==='none'){
+    area.style.display='block';
+    btn.textContent='收起';
+    renderPolitics();
+  }else{
+    area.style.display='none';
+    btn.textContent='展开';
+  }
+}
+function exportPolitics(){
+  let list=loadPolitics();
+  if(list.length===0){toast('还没有理论知识');return}
+  let d=new Date().toISOString().slice(0,10);
+  let text='政治理论知识\n导出日期：'+d+'\n'+'─'.repeat(24)+'\n';
+  list.forEach((m,i)=>{text+=(i+1)+'. '+m.r+'\n   💡 '+m.t+'\n\n'});
+  text+='（共 '+list.length+' 条）';
+  let blob=new Blob(['﻿'+text],{type:'text/plain;charset=utf-8'});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement('a');
+  a.href=url;a.download='政治理论知识_'+d+'.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('✅ 已导出 '+list.length+' 条 (TXT)');
 }
 
 // ═══════════ 记账系统 ═══════════
