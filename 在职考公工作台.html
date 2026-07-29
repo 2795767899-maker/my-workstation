@@ -194,6 +194,19 @@ input::placeholder,textarea::placeholder{color:var(--gray)}
 .arch-item{background:var(--pink4);border-radius:var(--r2);padding:10px 14px;margin-bottom:8px;cursor:pointer;transition:.15s}
 .arch-item:active{transform:scale(.98)}
 
+/* ── 复盘方法论 ── */
+.method-card{background:var(--pink4);border-radius:var(--r2);padding:14px;margin-bottom:10px}
+.method-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.method-name{font-size:15px;font-weight:700;color:var(--pink)}
+.method-tag{font-size:10px;background:var(--pink);color:#fff;padding:2px 8px;border-radius:10px}
+.method-desc{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.6}
+.method-steps{margin-top:10px;padding-top:10px;border-top:1px dashed var(--pink3);display:none}
+.method-steps.open{display:block}
+.method-steps .step{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.method-steps .step-num{min-width:22px;height:22px;background:var(--pink);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.method-steps .step-text{font-size:13px;color:var(--text1);line-height:1.7;flex:1}
+.method-template{background:#fff;border-radius:6px;padding:10px;margin-top:8px;font-size:12px;color:var(--text2);line-height:1.8;white-space:pre-wrap}
+
 /* ── 健康统计圆 ── */
 .stat-row{display:flex;gap:12px;margin-bottom:12px}
 .stat-box{flex:1;background:var(--pink4);border-radius:var(--r2);padding:12px;text-align:center}
@@ -381,6 +394,11 @@ input::placeholder,textarea::placeholder{color:var(--gray)}
     <label style="font-size:13px;font-weight:600;color:var(--pink)">📝 高频词复习</label>
     <div id="weekly-wordbank" style="margin-top:8px"></div>
   </div>
+</div>
+
+<div class="card" id="review-methods">
+  <div class="card-title"><span class="ico">🧠</span>复盘方法论 · 照着做</div>
+  <div id="review-methods-ct" style="font-size:13px;line-height:1.8"></div>
 </div>
 
 <div class="card" id="history-review">
@@ -907,6 +925,109 @@ function initReview(){
   });
   document.getElementById('review-history').innerHTML=hist||'<div style="color:var(--text2);text-align:center;padding:12px">暂无记录</div>';
   try{renderWeeklyWordBank()}catch(e){}
+  try{renderReviewMethods()}catch(e){}
+}
+
+// ═══════════ 复盘方法论 ═══════════
+const REVIEW_METHODS=[
+  {
+    name:'KPT 复盘法',tag:'最简单',
+    desc:'适合每日复盘，5分钟搞定。Keep（保持）/ Problem（问题）/ Try（尝试）。',
+    steps:[
+      {t:'Keep · 保持：今天做了哪些好的事情？哪些方法有效？继续坚持。',eg:'例：今天用番茄钟法做了2套行测，专注度比昨天高。'},
+      {t:'Problem · 问题：今天遇到了什么问题？哪里做得不好？',eg:'例：资料分析用时超了10分钟，公式记不牢导致反复翻书。'},
+      {t:'Try · 尝试：明天打算尝试什么新方法来解决？',eg:'例：睡前花15分钟默写资料分析公式，明天模考严格控制每模块时间。'}
+    ],
+    template:'📝 KPT复盘模板\n\n【Keep · 保持】\n1.\n2.\n\n【Problem · 问题】\n1.\n2.\n\n【Try · 尝试】\n1.\n2.'
+  },
+  {
+    name:'PDCA 循环法',tag:'最系统',
+    desc:'适合每周/每阶段复盘。Plan（计划）→ Do（执行）→ Check（检查）→ Act（改进），持续迭代。',
+    steps:[
+      {t:'Plan · 计划：本周/本阶段的学习���标是什么？制定了什么计划？',eg:'例：本周目标完成行测4套真题+申论3篇大作文。'},
+      {t:'Do · 执行：实际执行情况如何？完成了多少？完成质量怎样？',eg:'例：行测做了3套（75%），申论只写了1篇。行测正确率65%，申论结构完整但论据不足。'},
+      {t:'Check · 检查：对比计划和实际，差距在哪里？原因是什么？',eg:'例：申论没完成因为工作日晚上精力不够，写大作文需要整块时间。'},
+      {t:'Act · 改进：根据差距如何调整？下一轮怎么做？',eg:'例：申论大作文改到周末上午（精力最好的时段），工作日晚上只做小题训练。'}
+    ],
+    template:'📝 PDCA复盘模板\n\n【Plan · 计划】\n本周目标：\n\n【Do · 执行】\n实际完成：\n完成质量：\n\n【Check · 检查】\n差距分析：\n原因：\n\n【Act · 改进】\n下阶段调整：'
+  },
+  {
+    name:'ORID 焦点法',tag:'最深入',
+    desc:'适合深度反思，从事实→感受→思考→行动四层递进。特别适合模考后复盘。',
+    steps:[
+      {t:'Objective · 客观事实：今天/这次模考发生了什么？用数据和事实说话。',eg:'例：行测模考总分62.3，言语75%、数量45%、判断68%、资料52%、常识58%。'},
+      {t:'Reflective · 情绪感受：你的情绪反应是什么？什么让你兴奋/沮丧？',eg:'例：数量做不完很焦虑，资料分析公式突然想不起来特别烦躁，但言语正确率提高了很开心。'},
+      {t:'Interpretive · 深层思考：为什么会这样？反映了什么深层问题？',eg:'例：数量弱是因为题型识别慢+计算速度不够；资料分析公式遗忘说明基础不扎实，需要回归课本。'},
+      {t:'Decisional · 行动决定：基于以上分析，你决定下一步做什么？',eg:'例：每天练10道数量关系限时训练，资料分析公式做成卡片贴在桌上每天看一遍。'}
+    ],
+    template:'📝 ORID复盘模板\n\n【Objective · 事实】\n数据/事实：\n\n【Reflective · 感受】\n情绪反应：\n\n【Interpretive · 思考】\n深层原因：\n\n【Decisional · 行动】\n下一步行动：'
+  },
+  {
+    name:'GRAI 复盘法',tag:'最实用',
+    desc:'Goal（回顾目标）→ Result（评估结果）→ Analysis（分析原因）→ Insight（总结规律），直击要害。',
+    steps:[
+      {t:'Goal · 回顾目标：最初的目标是什么？要具体、可衡量。',eg:'例：目标：本周行测言语理解正确率达到80%以上。'},
+      {t:'Result · 评估结果：实际结果如何？和目标的差距是多少？',eg:'例：本周做了4套言语专项，正确率分别为72%/78%/81%/76%，平均76.75%，差3.25%。'},
+      {t:'Analysis · 分析原因：为什么会有这个差距？做对了什么？做错了什么？',eg:'例：做对的：逻辑填空靠语感和排除法正确率高；做错的：主旨概括题经常被干扰选项带偏，选了"片面的正确"。'},
+      {t:'Insight · 总结规律：提炼出可复用的经验/教训/规律。',eg:'例：主旨题技巧：先读首尾句抓主旨→排除"无中生有"和"过于绝对"→警惕"看似正确但片面"的选项。'}
+    ],
+    template:'📝 GRAI复盘模板\n\n【Goal · 目标】\n\n【Result · 结果】\n\n【Analysis · 分析】\n成功原因：\n失败原因：\n\n【Insight · 规律】\n经验/教训：'
+  }
+];
+function renderReviewMethods(){
+  let h='';
+  REVIEW_METHODS.forEach((m,i)=>{
+    h+=`<div class="method-card">
+      <div class="method-header" onclick="toggleMethod(${i})">
+        <div>
+          <span class="method-name">${m.name}</span>
+          <span class="method-tag" style="margin-left:8px">${m.tag}</span>
+        </div>
+        <span id="method-arrow-${i}" style="font-size:18px;transition:.2s;color:var(--pink)">▶</span>
+      </div>
+      <div class="method-desc">${m.desc}</div>
+      <div class="method-steps" id="method-steps-${i}">
+        ${m.steps.map((s,j)=>`<div class="step">
+          <div class="step-num">${j+1}</div>
+          <div class="step-text"><b>${s.t}</b><br><span style="color:var(--text2)">${s.eg}</span></div>
+        </div>`).join('')}
+        <div class="method-template" onclick="fillTemplate(${i})" title="点击复制模板到上方每日复盘" style="cursor:pointer">
+          <div style="font-size:11px;color:var(--pink);margin-bottom:4px">📋 点击复制此模板到每日复盘 ↓</div>
+          ${m.template}
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('review-methods-ct').innerHTML=h;
+}
+function toggleMethod(i){
+  let el=document.getElementById('method-steps-'+i);
+  let arrow=document.getElementById('method-arrow-'+i);
+  if(el.classList.contains('open')){
+    el.classList.remove('open');
+    arrow.style.transform='rotate(0deg)';
+  }else{
+    el.classList.add('open');
+    arrow.style.transform='rotate(90deg)';
+  }
+}
+function fillTemplate(i){
+  let m=REVIEW_METHODS[i];
+  let today=new Date().toISOString().slice(0,10);
+  let rv=loadReview();
+  if(!rv[today])rv[today]={};
+  let current=rv[today].done||'';
+  if(current&&!confirm('每日复盘已有内容，是否替换为「'+m.name+'」模板？'))return;
+  rv[today].done=m.template;
+  localStorage.setItem(RK,JSON.stringify(rv));
+  document.getElementById('review-done').value=m.template;
+  // 切到复盘页
+  let btns=document.querySelectorAll('.nav-item');
+  btns.forEach(b=>{if(b.textContent.includes('复盘'))b.click();});
+  setTimeout(()=>{
+    document.getElementById('review-done').scrollIntoView({behavior:'smooth',block:'center'});
+  },300);
+  toast('✅ 已填入「'+m.name+'」模板');
 }
 
 // ═══════════ 健康系统 ═══════════
