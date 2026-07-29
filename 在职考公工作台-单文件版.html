@@ -921,11 +921,19 @@ function initReview(){
   let dates=Object.keys(rv).filter(k=>k!=='week').sort().reverse().slice(0,7);
   dates.forEach(d=>{
     let r=rv[d];
-    if(r.done||r.problem)hist+=`<div class="review-hist"><div class="rd">📅 ${d}</div><div class="rc">✅ ${r.done||'（未填写）'}</div>${r.problem?`<div class="rc" style="color:var(--red)">⚠️ ${r.problem}</div>`:''}</div>`;
+    if(r.done||r.problem)hist+=`<div class="review-hist" style="position:relative"><div class="rd">📅 ${d}</div><div class="rc">✅ ${r.done||'（未填写）'}</div>${r.problem?`<div class="rc" style="color:var(--red)">⚠️ ${r.problem}</div>`:''}<span onclick="delReview('${d}')" style="position:absolute;top:6px;right:10px;font-size:18px;color:var(--gray);cursor:pointer;line-height:1" title="删除此条">×</span></div>`;
   });
   document.getElementById('review-history').innerHTML=hist||'<div style="color:var(--text2);text-align:center;padding:12px">暂无记录</div>';
   try{renderWeeklyWordBank()}catch(e){}
   try{renderReviewMethods()}catch(e){}
+}
+function delReview(dateStr){
+  if(!confirm('确定删除「'+dateStr+'」的复盘记录吗？'))return;
+  let rv=loadReview();
+  delete rv[dateStr];
+  localStorage.setItem(RK,JSON.stringify(rv));
+  initReview();
+  toast('🗑️ 已删除');
 }
 
 // ═══════════ 复盘方法论 ═══════════
