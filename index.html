@@ -1404,12 +1404,12 @@ function initMoney(){
   let monthSum=store.current.reduce((s,b)=>s+b.a,0);
   let cats={};
   store.current.forEach(b=>{cats[b.c]=(cats[b.c]||0)+b.a});
-  let stats=`<div style="font-weight:700;color:var(--pink);font-size:18px;text-align:center;padding:6px 0">¥${monthSum.toFixed(2)}</div><div style="text-align:center;font-size:12px;color:var(--text2);margin-bottom:10px">本月总支出</div>`;
+  let stats=`<div style="font-weight:700;color:var(--pink);font-size:18px;text-align:center;padding:6px 0;cursor:pointer" ondblclick="showMonthDetail()" title="双击查看本月全部明细">¥${monthSum.toFixed(2)}</div><div style="text-align:center;font-size:12px;color:var(--text2);margin-bottom:10px">本月总支出（双击查看明细）</div>`;
   if(monthSum>0){
     const colors=['#FF6B9D','#C8A2D0','#7EDDC1','#FFCBA4','#FFD700','#87CEEB','#FFB6C1','#DDA0DD'];
     Object.entries(cats).sort((a,b)=>b[1]-a[1]).forEach(([c,v],i)=>{
       let pct=Math.round(v/monthSum*100);
-      stats+=`<div class="cat-bar"><span class="cat-name">${c}</span><div class="cat-track"><div style="width:${pct}%;background:${colors[i%colors.length]}"></div></div><span class="cat-pct">¥${v.toFixed(0)} (${pct}%)</span></div>`;
+      stats+=`<div class="cat-bar" style="cursor:pointer" ondblclick="showCatDetail('${c.replace(/'/g,"\\'")}')" title="双击查看「${c}」明细"><span class="cat-name">${c}</span><div class="cat-track"><div style="width:${pct}%;background:${colors[i%colors.length]}"></div></div><span class="cat-pct">¥${v.toFixed(0)} (${pct}%)</span></div>`;
     });
   }
   document.getElementById('bill-stats').innerHTML=stats;
@@ -1431,6 +1431,27 @@ function showArchiveMonth(m){
   let text=`📅 ${m} 账单明细\n${'─'.repeat(20)}\n`;
   bills.forEach(b=>{text+=`${b.d}  -¥${b.a.toFixed(2)}  ${b.c}  ${b.n}\n`});
   text+=`${'─'.repeat(20)}\n合计：¥${sum.toFixed(2)}`;
+  alert(text);
+}
+function showMonthDetail(){
+  let store=loadMoney();
+  let bills=store.current.slice().sort((a,b)=>b.d.localeCompare(a.d));
+  if(bills.length===0){toast('本月暂无记录');return}
+  let month=bills[0].d.slice(0,7);
+  let sum=bills.reduce((s,b)=>s+b.a,0);
+  let text=`📊 ${month} 本月全部明细\n${'─'.repeat(28)}\n`;
+  bills.forEach(b=>{text+=`${b.d.slice(5)}  -¥${b.a.toFixed(2)}  ${b.c}  ${b.n||'—'}\n`});
+  text+=`${'─'.repeat(28)}\n合计：¥${sum.toFixed(2)}（共${bills.length}笔）`;
+  alert(text);
+}
+function showCatDetail(cat){
+  let store=loadMoney();
+  let bills=store.current.filter(b=>b.c===cat).sort((a,b)=>b.d.localeCompare(a.d));
+  if(bills.length===0){toast('该分类暂无记录');return}
+  let sum=bills.reduce((s,b)=>s+b.a,0);
+  let text=`📊 ${cat} 分类明细\n${'─'.repeat(24)}\n`;
+  bills.forEach(b=>{text+=`${b.d.slice(5)}  -¥${b.a.toFixed(2)}  ${b.n||'—'}\n`});
+  text+=`${'─'.repeat(24)}\n合计：¥${sum.toFixed(2)}（共${bills.length}笔）`;
   alert(text);
 }
 
