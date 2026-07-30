@@ -361,6 +361,18 @@ input::placeholder,textarea::placeholder{color:var(--gray)}
   <div><label style="font-size:13px;font-weight:600;color:var(--pink);display:block;margin-bottom:4px">准考证</label><input id="infoTicket" oninput="save()"></div>
 </div>
 
+<!-- 每日存档 -->
+<div class="card" id="archive-card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div class="card-title" style="margin-bottom:0"><span class="ico">🗄️</span>每日自动存档</div>
+    <div style="display:flex;gap:6px">
+      <button id="archToggleBtn" class="btn btn-soft btn-sm" onclick="toggleArchive()">展开</button>
+      <button class="btn btn-soft btn-sm" onclick="exportArchive()">📤 导出</button>
+    </div>
+  </div>
+  <div id="archive-area" style="display:none;margin-top:10px"></div>
+</div>
+
 <!-- 心态 -->
 <div class="card" id="tips">
   <div class="card-title"><span class="ico">💕</span>心态提示</div>
@@ -526,6 +538,14 @@ function save(){localStorage.setItem(K,JSON.stringify(data))}
 // ═══════════ 初始化 ═══════════
 function init(){
   load();
+  // 首次打开时检测是否跨天，自动存档昨天数据
+  let today=new Date().toISOString().slice(0,10);
+  let lastOpen=localStorage.getItem('gk_lastOpen');
+  if(lastOpen&&lastOpen!==today){
+    dailyArchive();
+  }
+  localStorage.setItem('gk_lastOpen',today);
+  _lastDate=today;
   updateClock();
   setInterval(updateClock,1000);
   try{renderSched()}catch(e){}
@@ -540,6 +560,7 @@ function init(){
   try{renderZhaokao()}catch(e){}
   try{initMnemonic()}catch(e){}
   try{initPolitics()}catch(e){}
+  try{renderArchive()}catch(e){}
   try{
     document.getElementById('infoSignup').value=data.infoSignup||'';
     document.getElementById('infoExam').value=data.infoExam||'';
@@ -554,6 +575,178 @@ function updateClock(){
   let h=String(d.getHours()).padStart(2,'0');
   let m=String(d.getMinutes()).padStart(2,'0');
   document.getElementById('clock').textContent=h+':'+m;
+  // 零点跨天检测：如果当前日期跟上次记录的不一样，说明跨天了
+  checkDayRollover();
+}
+
+// ═══════════ 每日零点刷新+存档 ═══════════
+let _lastDate=new Date().toISOString().slice(0,10);
+function checkDayRollover(){
+  let today=new Date().toISOString().slice(0,10);
+  if(today!==_lastDate){
+    _lastDate=today;
+    dailyArchive();
+    // 刷新页面所有模块
+    try{init()}catch(e){}
+    toast('🌙 已跨天，数据已自动存档并刷新');
+  }
+}
+function dailyArchive(){
+  let yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  let AK='gk_archive';
+  let arch;
+  try{arch=JSON.parse(localStorage.getItem(AK)||'{}')}catch(e){arch={}}
+  // 快照：打卡数据
+  try{
+    let d=JSON.parse(localStorage.getItem(K)||'{}');
+    if(Object.keys(d).length>0){
+      if(!arch[yesterday])arch[yesterday]={};
+      arch[yesterday].checks={chk:d.chk||{},mods:d.mods||{},slChk:d.slChk||{},matLib:d.matLib||''};
+    }
+  }catch(e){}
+  // 快照：复盘
+  try{
+    let rv=JSON.parse(localStorage.getItem(RK)||'{}');
+    if(rv[yesterday]){
+      if(!arch[yesterday])arch[yesterday]={};
+      arch[yesterday].review=rv[yesterday];
+    }
+  }catch(e){}
+  // 快照：健康
+  try{
+    let hv=JSON.parse(localStorage.getItem(HK)||'{}');
+    if(hv[yesterday]){
+      if(!arch[yesterday])arch[yesterday]={};
+      arch[yesterday].health={meals:hv[yesterday],exChk:hv.exChk||{}};
+    }
+  }catch(e){}
+  // 快照：记账（本月账单中属于昨天的）
+  try{
+    let store=JSON.parse(localStorage.getItem(MK)||'{}');
+    if(store.current){
+      let yb=store.current.filter(b=>b.d===yesterday);
+      if(yb.length>0){
+        if(!arch[yesterday])arch[yesterday]={};
+        arch[yesterday].bills=yb;
+        let sum=yb.reduce((s,b)=>s+b.a,0);
+        arch[yesterday].billSum=sum;
+      }
+    }
+  }catch(e){}
+  localStorage.setItem(AK,JSON.stringify(arch));
+}
+function renderArchive(){
+  let arch;
+  try{arch=JSON.parse(localStorage.getItem('gk_archive')||'{}')}catch(e){arch={}}
+  let dates=Object.keys(arch).sort().reverse();
+  let el=document.getElementById('archive-area');
+  if(dates.length===0){
+    el.innerHTML='<div style="color:var(--text2);text-align:center;padding:12px;font-size:13px">暂无自动存档记录 🌙<br>每天零点或次日首次打开会自动存档</div>';
+    return;
+  }
+  let h='';
+  dates.slice(0,14).forEach(d=>{
+    let a=arch[d];
+    let parts=[];
+    if(a.checks){
+      let chkCount=Object.keys(a.checks.chk||{}).length;
+      let modDone=Object.values(a.checks.mods||{}).reduce((s,m)=>s+m.filter(p=>p==='已完成').length,0);
+      let modTotal=Object.values(a.checks.mods||{}).reduce((s,m)=>s+m.length,0);
+      parts.push(`✅打卡${chkCount}项/行测${modDone}/${modTotal}`);
+    }
+    if(a.review)parts.push('📝复盘');
+    if(a.health)parts.push('💪健康');
+    if(a.bills)parts.push(`💰¥${(a.billSum||0).toFixed(2)}(${a.bills.length}笔)`);
+    h+=`<div class="review-hist" style="position:relative"><div class="rd">📅 ${d}</div><div class="rc" style="font-size:12px">${parts.join(' · ')||'（无数据）'}</div><span onclick="showArchiveDetail('${d}')" style="position:absolute;top:6px;right:10px;font-size:13px;color:var(--pink);cursor:pointer" title="查看详情">👁</span></div>`;
+  });
+  if(dates.length>14)h+=`<div style="text-align:center;font-size:11px;color:var(--text2);padding:6px">共 ${dates.length} 天存档，仅显示最近 14 天</div>`;
+  el.innerHTML=h;
+}
+function showArchiveDetail(dateStr){
+  let arch;
+  try{arch=JSON.parse(localStorage.getItem('gk_archive')||'{}')}catch(e){arch={}}
+  let a=arch[dateStr];
+  if(!a){toast('无此日期存档');return}
+  let text=`🗄️ ${dateStr} 存档详情\n${'─'.repeat(28)}\n`;
+  if(a.checks){
+    text+='\n【✅ 打卡】\n';
+    let c=a.checks.chk||{};
+    Object.keys(c).forEach(k=>{if(c[k])text+=`  ✓ ${k}\n`});
+    text+=`  行测进度：${Object.values(a.checks.mods||{}).reduce((s,m)=>s+m.filter(p=>p==='已完成').length,0)}/${Object.values(a.checks.mods||{}).reduce((s,m)=>s+m.length,0)}\n`;
+  }
+  if(a.review){
+    text+='\n【📝 复盘】\n';
+    if(a.review.done)text+=`  完成：${a.review.done}\n`;
+    if(a.review.problem)text+=`  问题：${a.review.problem}\n`;
+    if(a.review.plan)text+=`  计划：${a.review.plan}\n`;
+  }
+  if(a.health){
+    text+='\n【💪 健康】\n';
+    let h=a.health.meals||{};
+    if(h.breakfast)text+=`  早餐：${h.breakfast}\n`;
+    if(h.lunch)text+=`  午餐：${h.lunch}\n`;
+    if(h.dinner)text+=`  晚餐：${h.dinner}\n`;
+    if(h.water)text+=`  饮水：${h.water}杯\n`;
+  }
+  if(a.bills){
+    text+='\n【💰 记账】\n';
+    a.bills.forEach(b=>{text+=`  ${b.d.slice(5)} -¥${b.a.toFixed(2)} ${b.c} ${b.n||''}\n`});
+    text+=`  合计：¥${(a.billSum||0).toFixed(2)}\n`;
+  }
+  alert(text);
+}
+function toggleArchive(){
+  let area=document.getElementById('archive-area');
+  let btn=document.getElementById('archToggleBtn');
+  if(area.style.display==='none'){
+    area.style.display='block';
+    btn.textContent='收起';
+    renderArchive();
+  }else{
+    area.style.display='none';
+    btn.textContent='展开';
+  }
+}
+function exportArchive(){
+  let arch;
+  try{arch=JSON.parse(localStorage.getItem('gk_archive')||'{}')}catch(e){arch={}}
+  let dates=Object.keys(arch).sort().reverse();
+  if(dates.length===0){toast('暂无存档记录');return}
+  let d=new Date().toISOString().slice(0,10);
+  let text='每日自动存档记录\n导出日期：'+d+'\n'+'═'.repeat(30)+'\n';
+  dates.forEach(dt=>{
+    let a=arch[dt];
+    text+='\n┌─ '+dt+' ────────────\n';
+    if(a.checks){
+      let c=a.checks.chk||{};
+      let chkList=Object.keys(c).filter(k=>c[k]);
+      text+='│ ✅ 打卡：'+(chkList.length?chkList.join('、'):'无')+'\n';
+      text+='│ 行测进度：'+Object.values(a.checks.mods||{}).reduce((s,m)=>s+m.filter(p=>p==='已完成').length,0)+'/'+Object.values(a.checks.mods||{}).reduce((s,m)=>s+m.length,0)+'\n';
+    }
+    if(a.review){
+      text+='│ 📝 复盘：'+((a.review.done||'').slice(0,50))+'\n';
+      if(a.review.problem)text+='│   问题：'+(a.review.problem||'').slice(0,50)+'\n';
+      if(a.review.plan)text+='│   计划：'+(a.review.plan||'').slice(0,50)+'\n';
+    }
+    if(a.health){
+      let h=a.health.meals||{};
+      text+='│ 💪 健康：'+[h.breakfast,h.lunch,h.dinner].filter(Boolean).join(' / ')+'\n';
+      if(h.water)text+='│   饮水：'+h.water+'杯\n';
+    }
+    if(a.bills){
+      text+='│ 💰 记账：¥'+(a.billSum||0).toFixed(2)+'（'+a.bills.length+'笔）\n';
+      a.bills.forEach(b=>{text+='│   '+b.d.slice(5)+' -¥'+b.a.toFixed(2)+' '+b.c+' '+(b.n||'')+'\n'});
+    }
+    text+='└────────────────────\n';
+  });
+  text+='\n（共 '+dates.length+' 天存档）';
+  let blob=new Blob(['﻿'+text],{type:'text/plain;charset=utf-8'});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement('a');
+  a.href=url;a.download='每日存档_'+d+'.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast('✅ 已导出 '+dates.length+' 天存档 (TXT)');
 }
 
 // ═══════════ 排班表 ═══════════
