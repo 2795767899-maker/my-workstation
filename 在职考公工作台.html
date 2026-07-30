@@ -524,6 +524,28 @@ input::placeholder,textarea::placeholder{color:var(--gray)}
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════ 时区工具（统一用本地时区，不用UTC） ═══════════
+function localDate(offsetDays){
+  let d=new Date();
+  if(offsetDays)d.setDate(d.getDate()+offsetDays);
+  let y=d.getFullYear();
+  let m=String(d.getMonth()+1).padStart(2,'0');
+  let day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function localMonth(){
+  let d=new Date();
+  let y=d.getFullYear();
+  let m=String(d.getMonth()+1).padStart(2,'0');
+  return y+'-'+m;
+}
+function localDateFrom(d){
+  let y=d.getFullYear();
+  let m=String(d.getMonth()+1).padStart(2,'0');
+  let day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+
 // ═══════════ 数据 ═══════════
 const K='gk_simple';
 const D={
@@ -542,7 +564,7 @@ function save(){localStorage.setItem(K,JSON.stringify(data))}
 function init(){
   load();
   // 首次打开时检测是否跨天，自动存档昨天数据
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   let lastOpen=localStorage.getItem('gk_lastOpen');
   if(lastOpen&&lastOpen!==today){
     dailyArchive();
@@ -583,9 +605,9 @@ function updateClock(){
 }
 
 // ═══════════ 每日零点刷新+存档 ═══════════
-let _lastDate=new Date().toISOString().slice(0,10);
+let _lastDate=localDate();
 function checkDayRollover(){
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   if(today!==_lastDate){
     _lastDate=today;
     dailyArchive();
@@ -595,7 +617,7 @@ function checkDayRollover(){
   }
 }
 function dailyArchive(){
-  let yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  let yesterday=localDate(-1);
   let AK='gk_archive';
   let arch;
   try{arch=JSON.parse(localStorage.getItem(AK)||'{}')}catch(e){arch={}}
@@ -715,7 +737,7 @@ function exportArchive(){
   try{arch=JSON.parse(localStorage.getItem('gk_archive')||'{}')}catch(e){arch={}}
   let dates=Object.keys(arch).sort().reverse();
   if(dates.length===0){toast('暂无存档记录');return}
-  let d=new Date().toISOString().slice(0,10);
+  let d=localDate();
   let text='每日自动存档记录\n导出日期：'+d+'\n'+'═'.repeat(30)+'\n';
   dates.forEach(dt=>{
     let a=arch[dt];
@@ -757,7 +779,7 @@ function renderSched(){
   let today=new Date(),day=today.getDay()||7;
   let mon=new Date(today);mon.setDate(today.getDate()-day+1);
   let weekDates=[];
-  for(let i=0;i<7;i++){let d=new Date(mon);d.setDate(mon.getDate()+i);weekDates.push(d.toISOString().slice(0,10))}
+  for(let i=0;i<7;i++){let d=new Date(mon);d.setDate(mon.getDate()+i);weekDates.push(localDateFrom(d))}
   for(let i=0;i<7;i++){if(!data.sched[i].d)data.sched[i].d=weekDates[i]}
   save();
   let h='<div class="gh"></div><div class="gh">一</div><div class="gh">二</div><div class="gh">三</div><div class="gh">四</div><div class="gh">五</div><div class="gh">六</div><div class="gh">日</div>';
@@ -896,7 +918,7 @@ function toggleWbReveal(i){
 function exportWordBank(){
   let wb=data.wordBank||[];
   if(wb.length===0){toast('还没有积累的词语');return;}
-  let d=new Date().toISOString().slice(0,10);
+  let d=localDate();
   let text='逻辑填空高频词积累\n导出日期：'+d+'\n'+'─'.repeat(24)+'\n';
   wb.forEach((w,i)=>{text+=(i+1)+'. '+w.w+(w.m?('：'+w.m):'')+'\n'});
   text+='\n（共 '+wb.length+' 个，来自「超级棒的工作台」）';
@@ -1101,7 +1123,7 @@ function showPage(tab,btn){
 const RK='gk_review';
 function loadReview(){try{let r=localStorage.getItem(RK);return r?JSON.parse(r):{}}catch(e){return{}}}
 function saveReview(){
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   let rv=loadReview();
   if(!rv[today])rv[today]={};
   rv[today].done=document.getElementById('review-done')?.value||'';
@@ -1111,7 +1133,7 @@ function saveReview(){
   localStorage.setItem(RK,JSON.stringify(rv));
 }
 function initReview(){
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   document.getElementById('review-date').textContent=today;
   let rv=loadReview();
   let td=rv[today]||{};
@@ -1146,7 +1168,7 @@ function delReview(dateStr){
 
 // ═══════════ 自动总结 ═══════════
 function autoSummary(){
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   let now=new Date();
   let hh=now.getHours(),mm=now.getMinutes();
   let timeStr=hh<12?'上午':hh<18?'下午':'晚上';
@@ -1359,7 +1381,7 @@ function toggleMethod(i){
 }
 function fillTemplate(i){
   let m=REVIEW_METHODS[i];
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   let rv=loadReview();
   if(!rv[today])rv[today]={};
   let current=rv[today].done||'';
@@ -1380,7 +1402,7 @@ function fillTemplate(i){
 const HK='gk_health';
 function loadHealth(){try{let r=localStorage.getItem(HK);return r?JSON.parse(r):{}}catch(e){return{}}}
 function saveHealth(){
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   let hv=loadHealth();
   if(!hv[today])hv[today]={};
   hv[today].breakfast=document.getElementById('meal-breakfast')?.value||'';
@@ -1390,7 +1412,7 @@ function saveHealth(){
   localStorage.setItem(HK,JSON.stringify(hv));
 }
 function initHealth(){
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   let hv=loadHealth();
   let td=hv[today]||{};
   document.getElementById('meal-breakfast').value=td.breakfast||'';
@@ -1399,7 +1421,7 @@ function initHealth(){
   document.getElementById('meal-water').value=td.water||'';
   renderExercises();
   let days=0,water=0;
-  for(let i=0;i<7;i++){let d=new Date();d.setDate(d.getDate()-i);let k=d.toISOString().slice(0,10);if(hv[k]&&(hv[k].breakfast||hv[k].lunch||hv[k].dinner))days++;water+=parseInt(hv[k]?.water)||0}
+  for(let i=0;i<7;i++){let d=new Date();d.setDate(d.getDate()-i);let k=localDateFrom(d);if(hv[k]&&(hv[k].breakfast||hv[k].lunch||hv[k].dinner))days++;water+=parseInt(hv[k]?.water)||0}
   let exDone=(hv.exChk&&Object.values(hv.exChk).filter(v=>v).length)||0;
   let exTotal=(hv.exercises||[]).length;
   document.getElementById('stat-ex').textContent=exDone+'/'+exTotal;
@@ -1537,7 +1559,7 @@ function toggleMnemonic(){
 function exportMnemonic(){
   let list=loadMnemonic();
   if(list.length===0){toast('还没有口诀');return}
-  let d=new Date().toISOString().slice(0,10);
+  let d=localDate();
   let text='常识速记口诀\n导出日期：'+d+'\n'+'─'.repeat(24)+'\n';
   list.forEach((m,i)=>{text+=(i+1)+'. '+m.r+'\n   💡 '+m.t+'\n\n'});
   text+='（共 '+list.length+' 条）';
@@ -1647,7 +1669,7 @@ function togglePolitics(){
 function exportPolitics(){
   let list=loadPolitics();
   if(list.length===0){toast('还没有理论知识');return}
-  let d=new Date().toISOString().slice(0,10);
+  let d=localDate();
   let text='政治理论知识\n导出日期：'+d+'\n'+'─'.repeat(24)+'\n';
   list.forEach((m,i)=>{text+=(i+1)+'. '+m.r+'\n   💡 '+m.t+'\n\n'});
   text+='（共 '+list.length+' 条）';
@@ -1670,7 +1692,7 @@ function addBill(){
   let note=document.getElementById('billNote')?.value;
   if(!amt||isNaN(amt))return;
   let store=loadMoney();
-  store.current.unshift({d:new Date().toISOString().slice(0,10),a:amt,c:cat,n:note||''});
+  store.current.unshift({d:localDate(),a:amt,c:cat,n:note||''});
   saveMoney(store);
   document.getElementById('billAmount').value='';
   document.getElementById('billNote').value='';
@@ -1701,7 +1723,7 @@ function editBill(i){
 function checkMonthArchive(){
   let store=loadMoney();
   if(store.current.length===0)return;
-  let nowMonth=new Date().toISOString().slice(0,7);
+  let nowMonth=localMonth();
   let oldestMonth=store.current[store.current.length-1].d.slice(0,7);
   if(oldestMonth!==nowMonth){
     let keep=[],move=[];
@@ -1714,7 +1736,7 @@ function checkMonthArchive(){
 function initMoney(){
   checkMonthArchive();
   let store=loadMoney();
-  let today=new Date().toISOString().slice(0,10);
+  let today=localDate();
   let month=today.slice(0,7);
   let todayBills=store.current.filter(b=>b.d===today);
   let h='';
