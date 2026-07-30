@@ -398,7 +398,10 @@ input::placeholder,textarea::placeholder{color:var(--gray)}
 <div style="height:8px"></div>
 
 <div class="card" id="daily-review">
-  <div class="card-title"><span class="ico">📊</span>每日复盘</div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div class="card-title" style="margin-bottom:0"><span class="ico">📊</span>每日复盘</div>
+    <button class="btn btn-pink btn-sm" onclick="autoSummary()">🤖 自动总结</button>
+  </div>
   <div style="font-size:13px;color:var(--text2);margin-bottom:10px">今日日期：<b id="review-date" style="color:var(--pink)"></b></div>
   <label style="font-size:13px;font-weight:600;color:var(--pink)">📝 今日完成情况</label>
   <textarea id="review-done" oninput="saveReview()" placeholder="今天完成了哪些学习任务？效果如何？" style="height:70px;margin:6px 0 12px"></textarea>
@@ -1139,6 +1142,136 @@ function delReview(dateStr){
   localStorage.setItem(RK,JSON.stringify(rv));
   initReview();
   toast('🗑️ 已删除');
+}
+
+// ═══════════ 自动总结 ═══════════
+function autoSummary(){
+  let today=new Date().toISOString().slice(0,10);
+  let now=new Date();
+  let hh=now.getHours(),mm=now.getMinutes();
+  let timeStr=hh<12?'上午':hh<18?'下午':'晚上';
+
+  // 1. 打卡
+  let chkDone=[],chkMiss=[];
+  CHKS.forEach((c,i)=>{
+    if(data.chk&&data.chk[i])chkDone.push(c);
+    else chkMiss.push(c);
+  });
+  let chkRate=chkDone.length+'/'+CHKS.length;
+
+  // 2. 行测进度
+  let modNames={yuyan:'言语',panduan:'判断',ziliao:'资料',shuliang:'数量',changshi:'常识'};
+  let modDetail=[];
+  let xcDone=0,xcTotal=0;
+  Object.entries(data.mods||{}).forEach(([k,v])=>{
+    let d=v.filter(p=>p==='已完成').length;
+    let t=v.length;
+    xcDone+=d;xcTotal+=t;
+    if(d>0)modDetail.push(`${modNames[k]||k} ${d}/${t}`);
+  });
+  let xcRate=xcDone+'/'+xcTotal;
+
+  // 3. 申论
+  let slDoneArr=[];
+  (data.sl||[]).forEach((t,i)=>{
+    if(data.slChk&&data.slChk['sl_'+i])slDoneArr.push(t);
+  });
+  let slRate=slDoneArr.length+'/5';
+
+  // 4. 高频词
+  let wbCount=(data.wordBank||[]).length;
+
+  // 5. 口诀
+  let mnCount=0;
+  try{mnCount=(JSON.parse(localStorage.getItem('gk_mnemonic')||'[]')).length}catch(e){}
+
+  // 6. 政治理论
+  let plCount=0;
+  try{plCount=(JSON.parse(localStorage.getItem('gk_politics')||'[]')).length}catch(e){}
+
+  // 7. 记账
+  let billCount=0,billSum=0;
+  try{
+    let store=JSON.parse(localStorage.getItem('gk_money')||'{}');
+    let tb=(store.current||[]).filter(b=>b.d===today);
+    billCount=tb.length;
+    billSum=tb.reduce((s,b)=>s+b.a,0);
+  }catch(e){}
+
+  // 8. 健康
+  let waterCups='',mealInfo='';
+  try{
+    let hv=JSON.parse(localStorage.getItem('gk_health')||'{}');
+    let h=hv[today]||{};
+    waterCups=h.water||'';
+    let meals=[h.breakfast,h.lunch,h.dinner].filter(Boolean);
+    mealInfo=meals.length>0?meals.join(' / '):'';
+  }catch(e){}
+
+  // === 生成「今日完成情况」 ===
+  let done='';
+  done+=`📅 ${today} ${timeStr}复盘\n\n`;
+  done+=`【✅ 打卡 ${chkRate}】\n`;
+  if(chkDone.length>0)done+=`  已完成：${chkDone.join('、')}\n`;
+  if(chkMiss.length>0)done+=`  未完成：${chkMiss.join('、')}\n`;
+  done+=`\n【📚 行测进度 ${xcRate}】\n`;
+  if(modDetail.length>0)done+=`  ${modDetail.join(' | ')}\n`;
+  else done+=`  今日无行测完成项\n`;
+  done+=`\n【✍️ 申论进度 ${slRate}】\n`;
+  if(slDoneArr.length>0)done+=`  已完成：${slDoneArr.join('、')}\n`;
+  else done+=`  今日申论未启动\n`;
+  done+=`\n【📝 积累统计】\n`;
+  done+=`  高频词 ${wbCount} 个 | 口诀 ${mnCount} 条 | 政治理论 ${plCount} 条\n`;
+  if(billCount>0)done+=`\n【💰 今日支出】\n  ${billCount}笔，合计 ¥${billSum.toFixed(2)}\n`;
+  if(waterCups)done+=`\n【💧 饮水】${waterCups}杯\n`;
+  if(mealInfo)done+=`【🍚 三餐】${mealInfo}\n`;
+
+  // === 生成「问题/不足」 ===
+  let problem='';
+  let issues=[];
+  if(chkMiss.length>0)issues.push(`打卡未完成 ${chkMiss.length} 项（${chkMiss.join('、')}）`);
+  if(xcTotal>0&&xcDone===0)issues.push('行测今日零完成，未开始练习');
+  if(slDoneArr.length===0)issues.push('申论今日未启动');
+  if(billSum>100)issues.push(`今日支出 ¥${billSum.toFixed(2)} 偏高，注意控制`);
+  if(waterCups&&parseInt(waterCups)<6)issues.push('饮水量不足6杯，需多喝水');
+  if(issues.length===0){
+    problem='今日各项任务完成情况良好，继续保持 👍\n如有具体遇到的问题可手动补充。';
+  }else{
+    problem='自动检测到以下不足：\n'+issues.map((s,i)=>`${i+1}. ${s}`).join('\n')+'\n\n可手动补充具体问题细节。';
+  }
+
+  // === 生成「明日计划」 ===
+  let plan='';
+  let todos=[];
+  if(chkMiss.length>0)todos.push(`补做今日未完成的${chkMiss.length}项打卡`);
+  if(xcDone<xcTotal){
+    let nextMod=Object.entries(data.mods||{}).find(([k,v])=>v.some(p=>p!=='已完成'));
+    if(nextMod)todos.push(`行测重点推进「${modNames[nextMod[0]]||nextMod[0]}」模块`);
+  }
+  if(slDoneArr.length<5)todos.push(`申论继续推进（${slDoneArr.length}/5完成）`);
+  if(waterCups&&parseInt(waterCups)<6)todos.push('每天保证8杯水');
+  if(billSum>80)todos.push('明天控制日常支出');
+  if(wbCount<20)todos.push('继续积累高频词（目标20+）');
+  if(todos.length===0){
+    plan='今日已全部完成！明天继续保持节奏：\n1. 维持打卡习惯\n2. 推进行测下一模块\n3. 坚持申论练习\n4. 持续积累高频词';
+  }else{
+    plan='明日重点计划：\n'+todos.map((s,i)=>`${i+1}. ${s}`).join('\n')+'\n\n可根据实际情况手动调整。';
+  }
+
+  // 填入并保存
+  let rv=loadReview();
+  if(!rv[today])rv[today]={};
+  let hasContent=rv[today].done||rv[today].problem;
+  if(hasContent&&!confirm('复盘已有内容，是否用自动总结替换？\n（建议先复制现有内容再替换）'))return;
+  rv[today].done=done;
+  rv[today].problem=problem;
+  rv[today].plan=plan;
+  localStorage.setItem(RK,JSON.stringify(rv));
+  document.getElementById('review-done').value=done;
+  document.getElementById('review-problem').value=problem;
+  document.getElementById('review-plan').value=plan;
+  toast('🤖 已根据今日数据自动生成复盘');
+  document.getElementById('review-done').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 // ═══════════ 复盘方法论 ═══════════
